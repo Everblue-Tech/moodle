@@ -1629,7 +1629,7 @@ function quiz_send_confirmation($recipient, $a) {
  * @return int|false as for {@link message_send()}.
  */
 function quiz_send_notification($recipient, $submitter, $a) {
-    global $PAGE;
+    global $PAGE, $CFG;
 
     // Recipient info for template.
     $a->useridnumber = $recipient->idnumber;
