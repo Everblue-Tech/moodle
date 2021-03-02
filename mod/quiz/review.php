@@ -214,7 +214,7 @@ if ($options->marks >= question_display_options::MARK_AND_MAX && quiz_has_grades
         $a->maxgrade = quiz_format_grade($quiz, $quiz->grade);
         if ($quiz->grade != 100) {
             $a->percent = html_writer::tag('b', format_float(
-                    $attempt->sumgrades * 100 / $quiz->sumgrades, 0));
+                    $attempt->sumgrades * 100 / $quiz->sumgrades, 2));
             $formattedgrade = get_string('outofpercent', 'quiz', $a);
         } else {
             $formattedgrade = get_string('outof', 'quiz', $a);
