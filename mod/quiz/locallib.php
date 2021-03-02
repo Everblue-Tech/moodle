@@ -1629,7 +1629,7 @@ function quiz_send_confirmation($recipient, $a) {
  * @return int|false as for {@link message_send()}.
  */
 function quiz_send_notification($recipient, $submitter, $a) {
-    global $PAGE;
+    global $PAGE, $CFG;
 
     // Recipient info for template.
     $a->useridnumber = $recipient->idnumber;
@@ -1647,6 +1647,9 @@ function quiz_send_notification($recipient, $submitter, $a) {
     $eventdata->userto            = $recipient;
     $eventdata->subject           = get_string('emailnotifysubject', 'quiz', $a);
     $eventdata->fullmessage       = get_string('emailnotifybody', 'quiz', $a);
+    if (isset($CFG->showgradeinquiznotification) && $CFG->showgradeinquiznotification) {
+        $eventdata->fullmessage   = get_string('emailnotifybodywithgrade', 'quiz', $a);
+    }
     $eventdata->fullmessageformat = FORMAT_PLAIN;
     $eventdata->fullmessagehtml   = '';
 
@@ -1739,6 +1742,10 @@ function quiz_send_notification_messages($course, $quiz, $attempt, $context, $cm
     $a->quizreviewlink  = '<a href="' . $a->quizreviewurl . '">' .
             format_string($quiz->name) . ' review</a>';
     $a->attemptid       = $attempt->id;
+    $a->sumgrades = $attempt->sumgrades;
+    $a->grade = $quiz->sumgrades;
+    $a->gradepercent = number_format((100*($attempt->sumgrades/ $quiz->sumgrades)),0).' %';
+
     // Student who sat the quiz info.
     $a->studentidnumber = $submitter->idnumber;
     $a->studentname     = fullname($submitter);
