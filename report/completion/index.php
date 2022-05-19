@@ -26,14 +26,14 @@
 
 use core\report_helper;
 
-require_once(__DIR__.'/../../config.php');
-require_once("{$CFG->libdir}/completionlib.php");
+require_once __DIR__ . '/../../config.php';
+require_once "{$CFG->libdir}/completionlib.php";
 
 /**
  * Configuration
  */
-define('COMPLETION_REPORT_PAGE',        25);
-define('COMPLETION_REPORT_COL_TITLES',  true);
+define('COMPLETION_REPORT_PAGE', 25);
+define('COMPLETION_REPORT_COL_TITLES', true);
 
 /*
  * Setup page, check permissions
@@ -41,15 +41,16 @@ define('COMPLETION_REPORT_COL_TITLES',  true);
 
 // Get course
 $courseid = required_param('course', PARAM_INT);
-$format = optional_param('format','',PARAM_ALPHA);
-$sort = optional_param('sort','',PARAM_ALPHA);
-$edituser = optional_param('edituser', 0, PARAM_INT);
+$removedisabled = optional_param('removedisabled', 1, PARAM_INT);
 
+$format = optional_param('format', '', PARAM_ALPHA);
+$sort = optional_param('sort', '', PARAM_ALPHA);
+$edituser = optional_param('edituser', 0, PARAM_INT);
 
 $course = $DB->get_record('course', array('id' => $courseid), '*', MUST_EXIST);
 $context = context_course::instance($course->id);
 
-$url = new moodle_url('/report/completion/index.php', array('course'=>$course->id));
+$url = new moodle_url('/report/completion/index.php', array('course' => $course->id));
 $PAGE->set_url($url);
 $PAGE->set_pagelayout('report');
 
@@ -59,13 +60,13 @@ $csv = ($format == 'csv' || $excel);
 
 // Load CSV library
 if ($csv) {
-    require_once("{$CFG->libdir}/csvlib.class.php");
+    require_once "{$CFG->libdir}/csvlib.class.php";
 }
 
 // Paging
-$start   = optional_param('start', 0, PARAM_INT);
+$start = optional_param('start', 0, PARAM_INT);
 $sifirst = optional_param('sifirst', 'all', PARAM_NOTAGS);
-$silast  = optional_param('silast', 'all', PARAM_NOTAGS);
+$silast = optional_param('silast', 'all', PARAM_NOTAGS);
 
 // Whether to show extra user identity information
 // TODO Does not support custom user profile fields (MDL-70456).
@@ -80,7 +81,7 @@ require_capability('report/completion:view', $context);
 // Get group mode
 $group = groups_get_course_group($course, true); // Supposed to verify group
 if ($group === 0 && $course->groupmode == SEPARATEGROUPS) {
-    require_capability('moodle/site:accessallgroups',$context);
+    require_capability('moodle/site:accessallgroups', $context);
 }
 
 /**
@@ -94,7 +95,7 @@ $modinfo = get_fast_modinfo($course);
 $completion = new completion_info($course);
 
 if (!$completion->has_criteria()) {
-    print_error('nocriteriaset', 'completion', $CFG->wwwroot.'/course/report.php?id='.$course->id);
+    print_error('nocriteriaset', 'completion', $CFG->wwwroot . '/course/report.php?id=' . $course->id);
 }
 
 // Get criteria and put in correct order
@@ -110,7 +111,7 @@ foreach ($completion->get_criteria(COMPLETION_CRITERIA_TYPE_ACTIVITY) as $criter
 
 foreach ($completion->get_criteria() as $criterion) {
     if (!in_array($criterion->criteriatype, array(
-            COMPLETION_CRITERIA_TYPE_COURSE, COMPLETION_CRITERIA_TYPE_ACTIVITY))) {
+        COMPLETION_CRITERIA_TYPE_COURSE, COMPLETION_CRITERIA_TYPE_ACTIVITY))) {
         $criteria[] = $criterion;
     }
 }
@@ -145,10 +146,10 @@ if (!$csv) {
 if ($csv) {
 
     $shortname = format_string($course->shortname, true, array('context' => $context));
-    $shortname = preg_replace('/[^a-z0-9-]/', '_',core_text::strtolower(strip_tags($shortname)));
+    $shortname = preg_replace('/[^a-z0-9-]/', '_', core_text::strtolower(strip_tags($shortname)));
 
     $export = new csv_export_writer('comma', '"', 'application/download', $excel);
-    $export->set_filename('completion-'.$shortname);
+    $export->set_filename('completion-' . $shortname);
 
 } else {
     // Navigation and header
@@ -163,7 +164,7 @@ if ($csv) {
     report_helper::print_report_selector($pluginname);
 
     // Handle groups (if enabled)
-    groups_print_course_menu($course, $CFG->wwwroot.'/report/completion/index.php?course='.$course->id);
+    groups_print_course_menu($course, $CFG->wwwroot . '/report/completion/index.php?course=' . $course->id);
 }
 
 if ($sifirst !== 'all') {
@@ -191,19 +192,19 @@ $where_params = array();
 
 if ($sifirst !== 'all') {
     $where[] = $DB->sql_like('u.firstname', ':sifirst', false, false);
-    $where_params['sifirst'] = $sifirst.'%';
+    $where_params['sifirst'] = $sifirst . '%';
 }
 
 if ($silast !== 'all') {
     $where[] = $DB->sql_like('u.lastname', ':silast', false, false);
-    $where_params['silast'] = $silast.'%';
+    $where_params['silast'] = $silast . '%';
 }
 
 // Get user match count
-$total = $completion->get_num_tracked_users(implode(' AND ', $where), $where_params, $group);
+$total = $completion->get_num_tracked_users(implode(' AND ', $where), $where_params, $group, $removedisabled);
 
 // Total user count
-$grandtotal = $completion->get_num_tracked_users('', array(), $group);
+$grandtotal = $completion->get_num_tracked_users('', array(), $group, $removedisabled);
 
 // If no users in this course what-so-ever
 if (!$grandtotal) {
@@ -223,14 +224,15 @@ if ($total) {
         $firstnamesort ? 'u.firstname ASC' : 'u.lastname ASC',
         $csv ? 0 : COMPLETION_REPORT_PAGE,
         $csv ? 0 : $start,
-        $context
+        $context,
+        $removedisabled
     );
 }
 
 // Build link for paging
-$link = $CFG->wwwroot.'/report/completion/index.php?course='.$course->id;
+$link = $CFG->wwwroot . '/report/completion/index.php?course=' . $course->id;
 if (strlen($sort)) {
-    $link .= '&amp;sort='.$sort;
+    $link .= '&amp;sort=' . $sort;
 }
 $link .= '&amp;start=';
 
@@ -247,21 +249,21 @@ if ($total > COMPLETION_REPORT_PAGE) {
 
     // Paging bar
     $pagingbar .= '<div class="paging">';
-    $pagingbar .= get_string('page').': ';
+    $pagingbar .= get_string('page') . ': ';
 
     $sistrings = array();
     if ($sifirst != 'all') {
-        $sistrings[] =  "sifirst={$sifirst}";
+        $sistrings[] = "sifirst={$sifirst}";
     }
     if ($silast != 'all') {
-        $sistrings[] =  "silast={$silast}";
+        $sistrings[] = "silast={$silast}";
     }
-    $sistring = !empty($sistrings) ? '&amp;'.implode('&amp;', $sistrings) : '';
+    $sistring = !empty($sistrings) ? '&amp;' . implode('&amp;', $sistrings) : '';
 
     // Display previous link
     if ($start > 0) {
         $pstart = max($start - COMPLETION_REPORT_PAGE, 0);
-        $pagingbar .= "(<a class=\"previous\" href=\"{$link}{$pstart}{$sistring}\">".get_string('previous').'</a>)&nbsp;';
+        $pagingbar .= "(<a class=\"previous\" href=\"{$link}{$pstart}{$sistring}\">" . get_string('previous') . '</a>)&nbsp;';
     }
 
     // Create page links
@@ -271,9 +273,8 @@ if ($total > COMPLETION_REPORT_PAGE) {
         $curpage++;
 
         if ($curstart == $start) {
-            $pagingbar .= '&nbsp;'.$curpage.'&nbsp;';
-        }
-        else {
+            $pagingbar .= '&nbsp;' . $curpage . '&nbsp;';
+        } else {
             $pagingbar .= "&nbsp;<a href=\"{$link}{$curstart}{$sistring}\">$curpage</a>&nbsp;";
         }
 
@@ -283,7 +284,7 @@ if ($total > COMPLETION_REPORT_PAGE) {
     // Display next link
     $nstart = $start + COMPLETION_REPORT_PAGE;
     if ($nstart < $total) {
-        $pagingbar .= "&nbsp;(<a class=\"next\" href=\"{$link}{$nstart}{$sistring}\">".get_string('next').'</a>)';
+        $pagingbar .= "&nbsp;(<a class=\"next\" href=\"{$link}{$nstart}{$sistring}\">" . get_string('next') . '</a>)';
     }
 
     $pagingbar .= '</div>';
@@ -298,7 +299,7 @@ if (!$csv) {
     print '<br class="clearer"/>'; // ugh
 
     $total_header = ($total == $grandtotal) ? $total : "{$total}/{$grandtotal}";
-    echo $OUTPUT->heading(get_string('allparticipants').": {$total_header}", 3);
+    echo $OUTPUT->heading(get_string('allparticipants') . ": {$total_header}", 3);
 
     print $pagingbar;
 
@@ -312,9 +313,9 @@ if (!$csv) {
         completionreport" style="text-align: left" cellpadding="5" border="1">';
 
     // Print criteria group names
-    print PHP_EOL.'<thead><tr style="vertical-align: top">';
+    print PHP_EOL . '<thead><tr style="vertical-align: top">';
     echo '<th scope="row" class="rowheader" colspan="' . $leftcols . '">' .
-            get_string('criteriagroup', 'completion') . '</th>';
+    get_string('criteriagroup', 'completion') . '</th>';
 
     $current_group = false;
     $col_count = 0;
@@ -331,7 +332,7 @@ if (!$csv) {
 
         // Print header cell
         if ($col_count) {
-            print '<th scope="col" colspan="'.$col_count.'" class="colheader criteriagroup">'.$current_group->get_type_title().'</th>';
+            print '<th scope="col" colspan="' . $col_count . '" class="colheader criteriagroup">' . $current_group->get_type_title() . '</th>';
         }
 
         if (isset($criteria[$i])) {
@@ -342,14 +343,14 @@ if (!$csv) {
     }
 
     // Overall course completion status
-    print '<th style="text-align: center;">'.get_string('course').'</th>';
+    print '<th style="text-align: center;">' . get_string('course') . '</th>';
 
     print '</tr>';
 
     // Print aggregation methods
-    print PHP_EOL.'<tr style="vertical-align: top">';
+    print PHP_EOL . '<tr style="vertical-align: top">';
     echo '<th scope="row" class="rowheader" colspan="' . $leftcols . '">' .
-            get_string('aggregationmethod', 'completion').'</th>';
+    get_string('aggregationmethod', 'completion') . '</th>';
 
     $current_group = false;
     $col_count = 0;
@@ -382,7 +383,7 @@ if (!$csv) {
                 $method = '-';
             }
 
-            print '<th scope="col" colspan="'.$col_count.'" class="colheader aggheader">'.$method.'</th>';
+            print '<th scope="col" colspan="' . $col_count . '" class="colheader aggheader">' . $method . '</th>';
         }
 
         if (isset($criteria[$i])) {
@@ -406,21 +407,21 @@ if (!$csv) {
     // Print criteria titles
     if (COMPLETION_REPORT_COL_TITLES) {
 
-        print PHP_EOL.'<tr>';
+        print PHP_EOL . '<tr>';
         echo '<th scope="row" class="rowheader" colspan="' . $leftcols . '">' .
-                get_string('criteria', 'completion') . '</th>';
+        get_string('criteria', 'completion') . '</th>';
 
         foreach ($criteria as $criterion) {
             // Get criteria details
             $details = $criterion->get_title_detailed();
             print '<th scope="col" class="colheader criterianame">';
-            print '<div class="rotated-text-container"><span class="rotated-text">'.$details.'</span></div>';
+            print '<div class="rotated-text-container"><span class="rotated-text">' . $details . '</span></div>';
             print '</th>';
         }
 
         // Overall course completion status
         print '<th scope="col" class="colheader criterianame">';
-        print '<div class="rotated-text-container"><span class="rotated-text">'.get_string('coursecomplete', 'completion').'</span></div>';
+        print '<div class="rotated-text-container"><span class="rotated-text">' . get_string('coursecomplete', 'completion') . '</span></div>';
         print '</th></tr>';
     }
 
@@ -434,19 +435,19 @@ if (!$csv) {
 
     if ($firstnamesort) {
         print
-            get_string('firstname')." / <a href=\"./index.php?course={$course->id}{$sistring}\">".
-            get_string('lastname').'</a>';
+        get_string('firstname') . " / <a href=\"./index.php?course={$course->id}{$sistring}\">" .
+        get_string('lastname') . '</a>';
     } else {
-        print "<a href=\"./index.php?course={$course->id}&amp;sort=firstname{$sistring}\">".
-            get_string('firstname').'</a> / '.
-            get_string('lastname');
+        print "<a href=\"./index.php?course={$course->id}&amp;sort=firstname{$sistring}\">" .
+        get_string('firstname') . '</a> / ' .
+        get_string('lastname');
     }
     print '</th>';
 
     // Print user identity columns
     foreach ($extrafields as $field) {
         echo '<th scope="col" class="completion-identifyfield">' .
-                \core_user\fields::get_display_name($field) . '</th>';
+        \core_user\fields::get_display_name($field) . '</th>';
     }
 
     ///
@@ -463,7 +464,7 @@ if (!$csv) {
             case COMPLETION_CRITERIA_TYPE_ACTIVITY:
 
                 // Display icon
-                $iconlink = $CFG->wwwroot.'/mod/'.$criterion->module.'/view.php?id='.$criterion->moduleinstance;
+                $iconlink = $CFG->wwwroot . '/mod/' . $criterion->module . '/view.php?id=' . $criterion->moduleinstance;
                 $iconattributes['title'] = $modinfo->cms[$criterion->moduleinstance]->get_formatted_name();
                 $iconalt = get_string('modulename', $criterion->module);
                 break;
@@ -473,7 +474,7 @@ if (!$csv) {
                 $crs = $DB->get_record('course', array('id' => $criterion->courseinstance));
 
                 // Display icon
-                $iconlink = $CFG->wwwroot.'/course/view.php?id='.$criterion->courseinstance;
+                $iconlink = $CFG->wwwroot . '/course/view.php?id=' . $criterion->courseinstance;
                 $iconattributes['title'] = format_string($crs->fullname, true, array('context' => context_course::instance($crs->id, MUST_EXIST)));
                 $iconalt = format_string($crs->shortname, true, array('context' => context_course::instance($crs->id)));
                 break;
@@ -495,9 +496,9 @@ if (!$csv) {
         // Print icon and cell
         print '<th class="criteriaicon">';
 
-        print ($iconlink ? '<a href="'.$iconlink.'" title="'.$iconattributes['title'].'">' : '');
+        print($iconlink ? '<a href="' . $iconlink . '" title="' . $iconattributes['title'] . '">' : '');
         print $OUTPUT->render($criterion->get_icon($iconalt, $iconattributes));
-        print ($iconlink ? '</a>' : '');
+        print($iconlink ? '</a>' : '');
 
         print '</th>';
     }
@@ -529,10 +530,9 @@ if (!$csv) {
             // Load activity
             $mod = $criterion->get_mod_instance();
             $row[] = $formattedname = format_string($mod->name, true,
-                    array('context' => context_module::instance($criterion->moduleinstance)));
+                array('context' => context_module::instance($criterion->moduleinstance)));
             $row[] = $formattedname . ' - ' . get_string('completiondate', 'report_completion');
-        }
-        else {
+        } else {
             // Handle all other criteria
             $row[] = strip_tags($criterion->get_title_detailed());
         }
@@ -557,7 +557,7 @@ foreach ($progress as $user) {
             $row[] = $user->{$field};
         }
     } else {
-        print PHP_EOL.'<tr id="user-'.$user->id.'">';
+        print PHP_EOL . '<tr id="user-' . $user->id . '">';
 
         if (completion_can_view_data($user->id, $course)) {
             $userurl = new moodle_url('/blocks/completionstatus/details.php', array('course' => $course->id, 'user' => $user->id));
@@ -566,9 +566,9 @@ foreach ($progress as $user) {
         }
 
         print '<th scope="row"><a href="' . $userurl->out() . '">' .
-            fullname($user, has_capability('moodle/site:viewfullnames', $context)) . '</a></th>';
+        fullname($user, has_capability('moodle/site:viewfullnames', $context)) . '</a></th>';
         foreach ($extrafields as $field) {
-            echo '<td>'.s($user->{$field}).'</td>';
+            echo '<td>' . s($user->{$field}) . '</td>';
         }
     }
 
@@ -599,22 +599,26 @@ foreach ($progress as $user) {
             }
 
             // Work out how it corresponds to an icon
-            switch($state) {
-                case COMPLETION_INCOMPLETE    : $completiontype = 'n';    break;
-                case COMPLETION_COMPLETE      : $completiontype = 'y';    break;
-                case COMPLETION_COMPLETE_PASS : $completiontype = 'pass'; break;
-                case COMPLETION_COMPLETE_FAIL : $completiontype = 'fail'; break;
+            switch ($state) {
+                case COMPLETION_INCOMPLETE:$completiontype = 'n';
+                    break;
+                case COMPLETION_COMPLETE:$completiontype = 'y';
+                    break;
+                case COMPLETION_COMPLETE_PASS:$completiontype = 'pass';
+                    break;
+                case COMPLETION_COMPLETE_FAIL:$completiontype = 'fail';
+                    break;
             }
 
             $auto = $activity->completion == COMPLETION_TRACKING_AUTOMATIC;
-            $completionicon = 'completion-'.($auto ? 'auto' : 'manual').'-'.$completiontype;
+            $completionicon = 'completion-' . ($auto ? 'auto' : 'manual') . '-' . $completiontype;
 
-            $describe = get_string('completion-'.$completiontype, 'completion');
+            $describe = get_string('completion-' . $completiontype, 'completion');
             $a = new StdClass();
-            $a->state     = $describe;
-            $a->date      = $date;
-            $a->user      = fullname($user);
-            $a->activity  = $activity->get_formatted_name();
+            $a->state = $describe;
+            $a->date = $date;
+            $a->user = fullname($user);
+            $a->activity = $activity->get_formatted_name();
             $fulldescribe = get_string('progress-title', 'completion', $a);
 
             if ($csv) {
@@ -633,12 +637,12 @@ foreach ($progress as $user) {
 
         // Handle all other criteria
         $completiontype = $is_complete ? 'y' : 'n';
-        $completionicon = 'completion-auto-'.$completiontype;
+        $completionicon = 'completion-auto-' . $completiontype;
 
-        $describe = get_string('completion-'.$completiontype, 'completion');
+        $describe = get_string('completion-' . $completiontype, 'completion');
 
         $a = new stdClass();
-        $a->state    = $describe;
+        $a->state = $describe;
 
         if ($is_complete) {
             $a->date = userdate($criteria_completion->timecompleted, get_string('strftimedatetimeshort', 'langconfig'));
@@ -646,7 +650,7 @@ foreach ($progress as $user) {
             $a->date = '';
         }
 
-        $a->user     = fullname($user);
+        $a->user = fullname($user);
         $a->activity = strip_tags($criterion->get_title());
         $fulldescribe = get_string('progress-title', 'completion', $a);
 
@@ -657,7 +661,7 @@ foreach ($progress as $user) {
             print '<td class="completion-progresscell">';
 
             if ($allow_marking_criteria === $criterion->id) {
-                $describe = get_string('completion-'.$completiontype, 'completion');
+                $describe = get_string('completion-' . $completiontype, 'completion');
 
                 $toggleurl = new moodle_url(
                     '/course/togglecompletion.php',
@@ -665,12 +669,12 @@ foreach ($progress as $user) {
                         'user' => $user->id,
                         'course' => $course->id,
                         'rolec' => $allow_marking_criteria,
-                        'sesskey' => sesskey()
+                        'sesskey' => sesskey(),
                     )
                 );
 
-                print '<a href="'.$toggleurl->out().'" title="'.s(get_string('clicktomarkusercomplete', 'report_completion')).'">' .
-                    $OUTPUT->pix_icon('i/completion-manual-' . ($is_complete ? 'y' : 'n'), $describe) . '</a></td>';
+                print '<a href="' . $toggleurl->out() . '" title="' . s(get_string('clicktomarkusercomplete', 'report_completion')) . '">' .
+                $OUTPUT->pix_icon('i/completion-manual-' . ($is_complete ? 'y' : 'n'), $describe) . '</a></td>';
             } else {
                 print $OUTPUT->pix_icon('i/' . $completionicon, $fulldescribe) . '</td>';
             }
@@ -683,14 +687,14 @@ foreach ($progress as $user) {
 
     // Load course completion
     $params = array(
-        'userid'    => $user->id,
-        'course'    => $course->id
+        'userid' => $user->id,
+        'course' => $course->id,
     );
 
     $ccompletion = new completion_completion($params);
-    $completiontype =  $ccompletion->is_complete() ? 'y' : 'n';
+    $completiontype = $ccompletion->is_complete() ? 'y' : 'n';
 
-    $describe = get_string('completion-'.$completiontype, 'completion');
+    $describe = get_string('completion-' . $completiontype, 'completion');
 
     $a = new StdClass;
 
@@ -700,8 +704,8 @@ foreach ($progress as $user) {
         $a->date = '';
     }
 
-    $a->state    = $describe;
-    $a->user     = fullname($user);
+    $a->state = $describe;
+    $a->user = fullname($user);
     $a->activity = strip_tags(get_string('coursecomplete', 'completion'));
     $fulldescribe = get_string('progress-title', 'completion', $a);
 
@@ -734,10 +738,22 @@ print '</table>';
 
 $csvurl = new moodle_url('/report/completion/index.php', array('course' => $course->id, 'format' => 'csv'));
 $excelurl = new moodle_url('/report/completion/index.php', array('course' => $course->id, 'format' => 'excelcsv'));
+$enrolledparticipantsurl = new moodle_url('/report/completion/index.php', array('course' => $course->id, 'removedisabled' => true));
+$allparticipantsurl = new moodle_url('/report/completion/index.php', array('course' => $course->id, 'removedisabled' => false));
 
 print '<ul class="export-actions">';
-print '<li><a href="'.$csvurl->out().'">'.get_string('csvdownload','completion').'</a></li>';
-print '<li><a href="'.$excelurl->out().'">'.get_string('excelcsvdownload','completion').'</a></li>';
+print '<li><a href="' . $csvurl->out() . '">' . get_string('csvdownload', 'completion') . '</a></li>';
+print '<li><a href="' . $excelurl->out() . '">' . get_string('excelcsvdownload', 'completion') . '</a></li>';
+
+switch ($removedisabled) {
+    case true:
+        print '<li><a href="' . $allparticipantsurl . '">' . get_string('showallusers', 'report_completion') . '</a></li>';
+        break;
+    case false:
+        print '<li><a href="' . $enrolledparticipantsurl . '">' . get_string('hidedisabledusers', 'report_completion') . '</a></li>';
+        break;
+}
+
 print '</ul>';
 
 echo $OUTPUT->footer($course);
