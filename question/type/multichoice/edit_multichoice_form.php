@@ -23,9 +23,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
-
 
 /**
  * Multiple choice editing form definition.
@@ -33,31 +31,34 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright  2007 Jamie Pratt
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class qtype_multichoice_edit_form extends question_edit_form {
+class qtype_multichoice_edit_form extends question_edit_form
+{
     /**
      * Add question-type specific form fields.
      *
      * @param object $mform the form being built.
      */
-    protected function definition_inner($mform) {
+    protected function definition_inner($mform)
+    {
+        global $CFG;
         $menu = array(
             get_string('answersingleno', 'qtype_multichoice'),
             get_string('answersingleyes', 'qtype_multichoice'),
         );
         $mform->addElement('select', 'single',
-                get_string('answerhowmany', 'qtype_multichoice'), $menu);
+            get_string('answerhowmany', 'qtype_multichoice'), $menu);
         $mform->setDefault('single', $this->get_default_value('single',
             get_config('qtype_multichoice', 'answerhowmany')));
 
         $mform->addElement('advcheckbox', 'shuffleanswers',
-                get_string('shuffleanswers', 'qtype_multichoice'), null, null, array(0, 1));
+            get_string('shuffleanswers', 'qtype_multichoice'), null, null, array(0, 1));
         $mform->addHelpButton('shuffleanswers', 'shuffleanswers', 'qtype_multichoice');
         $mform->setDefault('shuffleanswers', $this->get_default_value('shuffleanswers',
             get_config('qtype_multichoice', 'shuffleanswers')));
 
         $mform->addElement('select', 'answernumbering',
-                get_string('answernumbering', 'qtype_multichoice'),
-                qtype_multichoice::get_numbering_styles());
+            get_string('answernumbering', 'qtype_multichoice'),
+            qtype_multichoice::get_numbering_styles());
         $mform->setDefault('answernumbering', $this->get_default_value('answernumbering',
             get_config('qtype_multichoice', 'answernumbering')));
 
@@ -67,7 +68,7 @@ class qtype_multichoice_edit_form extends question_edit_form {
         $mform->setDefault('showstandardinstruction', $this->get_default_value('showstandardinstruction', 0));
 
         $this->add_per_answer_fields($mform, get_string('choiceno', 'qtype_multichoice', '{no}'),
-                question_bank::fraction_options_full(), max(5, QUESTION_NUMANS_START));
+            question_bank::fraction_options_full(), max(isset($CFG->answeroptions) ? $CFG->answeroptions : 5, QUESTION_NUMANS_START));
 
         $this->add_combined_feedback_fields(true);
         $mform->disabledIf('shownumcorrect', 'single', 'eq', 1);
@@ -76,28 +77,30 @@ class qtype_multichoice_edit_form extends question_edit_form {
     }
 
     protected function get_per_answer_fields($mform, $label, $gradeoptions,
-            &$repeatedoptions, &$answersoption) {
+        &$repeatedoptions, &$answersoption) {
         $repeated = array();
         $repeated[] = $mform->createElement('editor', 'answer',
-                $label, array('rows' => 1), $this->editoroptions);
+            $label, array('rows' => 1), $this->editoroptions);
         $repeated[] = $mform->createElement('select', 'fraction',
-                get_string('gradenoun'), $gradeoptions);
+            get_string('gradenoun'), $gradeoptions);
         $repeated[] = $mform->createElement('editor', 'feedback',
-                get_string('feedback', 'question'), array('rows' => 1), $this->editoroptions);
+            get_string('feedback', 'question'), array('rows' => 1), $this->editoroptions);
         $repeatedoptions['answer']['type'] = PARAM_RAW;
         $repeatedoptions['fraction']['default'] = 0;
         $answersoption = 'answers';
         return $repeated;
     }
 
-    protected function get_hint_fields($withclearwrong = false, $withshownumpartscorrect = false) {
+    protected function get_hint_fields($withclearwrong = false, $withshownumpartscorrect = false)
+    {
         list($repeated, $repeatedoptions) = parent::get_hint_fields($withclearwrong, $withshownumpartscorrect);
         $repeatedoptions['hintclearwrong']['disabledif'] = array('single', 'eq', 1);
         $repeatedoptions['hintshownumcorrect']['disabledif'] = array('single', 'eq', 1);
         return array($repeated, $repeatedoptions);
     }
 
-    protected function data_preprocessing($question) {
+    protected function data_preprocessing($question)
+    {
         $question = parent::data_preprocessing($question);
         $question = $this->data_preprocessing_answers($question, true);
         $question = $this->data_preprocessing_combined_feedback($question, true);
@@ -113,7 +116,8 @@ class qtype_multichoice_edit_form extends question_edit_form {
         return $question;
     }
 
-    public function validation($data, $files) {
+    public function validation($data, $files)
+    {
         $errors = parent::validation($data, $files);
         $answers = $data['answer'];
         $answercount = 0;
@@ -129,7 +133,7 @@ class qtype_multichoice_edit_form extends question_edit_form {
                 continue;
             }
             if ($trimmedanswer === '') {
-                $errors['fraction['.$key.']'] = get_string('errgradesetanswerblank', 'qtype_multichoice');
+                $errors['fraction[' . $key . ']'] = get_string('errgradesetanswerblank', 'qtype_multichoice');
             }
 
             $answercount++;
@@ -155,19 +159,20 @@ class qtype_multichoice_edit_form extends question_edit_form {
         if ($data['single']) {
             if ($maxfraction != 1) {
                 $errors['fraction[0]'] = get_string('errfractionsnomax', 'qtype_multichoice',
-                        $maxfraction * 100);
+                    $maxfraction * 100);
             }
         } else {
             $totalfraction = round($totalfraction, 2);
             if ($totalfraction != 1) {
                 $errors['fraction[0]'] = get_string('errfractionsaddwrong', 'qtype_multichoice',
-                        $totalfraction * 100);
+                    $totalfraction * 100);
             }
         }
         return $errors;
     }
 
-    public function qtype() {
+    public function qtype()
+    {
         return 'multichoice';
     }
 }
