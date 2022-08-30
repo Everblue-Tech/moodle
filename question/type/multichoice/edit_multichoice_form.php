@@ -64,7 +64,7 @@ class qtype_multichoice_edit_form extends question_edit_form {
         $mform->setDefault('showstandardinstruction', 0);
 
         $this->add_per_answer_fields($mform, get_string('choiceno', 'qtype_multichoice', '{no}'),
-                question_bank::fraction_options_full(), max(5, QUESTION_NUMANS_START));
+                question_bank::fraction_options_full(), max(isset($CFG->answeroptions) ? $CFG->answeroptions : 5, QUESTION_NUMANS_START));
 
         $this->add_combined_feedback_fields(true);
         $mform->disabledIf('shownumcorrect', 'single', 'eq', 1);
