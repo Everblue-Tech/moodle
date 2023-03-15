@@ -137,7 +137,7 @@ class quiz_add_random_form extends moodleform {
      */
     private function get_number_of_questions_to_add_choices($maxrand = 100) {
         $randomcount = array();
-        for ($i = 1; $i <= min(100, $maxrand); $i++) {
+        for ($i = 1; $i <= min(350, 350); $i++) {
             $randomcount[$i] = $i;
         }
         return $randomcount;
